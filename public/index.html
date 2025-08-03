@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My First RAG Application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .section {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 25px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .section h2 {
+            color: #334155;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #4f46e5;
+            background: #f1f5f9;
+        }
+
+        .upload-area.dragover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #4338ca;
+        }
+
+        .question-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .ask-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .ask-btn:hover {
+            background: #059669;
+        }
+
+        .ask-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .results {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+
+        .answer-box {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .answer-box h3 {
+            color: #0c4a6e;
+            margin-bottom: 10px;
+        }
+
+        .answer {
+            color: #334155;
+            line-height: 1.6;
+            font-size: 16px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .context-box {
+            background: #fefce8;
+            border: 1px solid #eab308;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .context-box h3 {
+            color: #a16207;
+            margin-bottom: 10px;
+        }
+
+        .context {
+            color: #374151;
+            line-height: 1.5;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .message.success {
+            background: #dcfce7;
+            border: 1px solid #16a34a;
+            color: #166534;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            border: 1px solid #dc2626;
+            color: #991b1b;
+        }
+
+        .clear-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-btn:hover {
+            background: #b91c1c;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 My First RAG Application</h1>
+            <p>Upload documents and ask questions using free Hugging Face models</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="section">
+                <h2>📁 Upload Documents</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <p>📄 Drag & drop files here or click to browse</p>
+                    <p style="font-size: 14px; color: #64748b; margin-top: 10px;">
+                        Supported: PDF, TXT, HTML (max 10MB)
+                    </p>
+                    <input type="file" id="fileInput" class="file-input" accept=".pdf,.txt,.html,.htm">
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                </div>
+
+                <div id="messages"></div>
+
+                <div class="stats" id="stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="docCount">0</div>
+                        <div class="stat-label">Documents</div>
+                    </div>
+                    <div class="stat-item">
+                        <button class="clear-btn" onclick="clearSystem()">Clear All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Section -->
+            <div class="section">
+                <h2>❓ Ask Questions</h2>
+
+                <div class="question-form">
+                    <textarea id="questionInput" class="question-input" placeholder="Ask a question about your uploaded documents...
+                        
+Example questions:
+• What is the main topic discussed?
+• Can you summarize the key points?
+• What are the important dates mentioned?"></textarea>
+
+                    <button class="ask-btn" id="askBtn" onclick="askQuestion()">
+                        🔍 Ask Question
+                    </button>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your question...</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="section results" id="results" style="display: none;">
+                <h2>💡 Answer</h2>
+
+                <div class="answer-box" id="answerBox" style="display: none;">
+                    <h3>🎯 Answer:</h3>
+                    <div class="answer" id="answer"></div>
+                </div>
+
+                <div class="context-box" id="contextBox" style="display: none;">
+                    <h3>📚 Source Context:</h3>
+                    <div class="context" id="context"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let isProcessing = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            setupEventListeners();
+            loadStats();
+        });
+
+        function setupEventListeners() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileUpload(files[0]);
+                }
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+
+            // Enter key for questions
+            document.getElementById('questionInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    askQuestion();
+                }
+            });
+        }
+
+        async function handleFileUpload(file) {
+            if (isProcessing) return;
+
+            const formData = new FormData();
+            formData.append('document', file);
+
+            try {
+                isProcessing = true;
+                showMessage('Uploading and processing document...', 'info');
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    loadStats();
+                } else {
+                    showMessage(result.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error uploading file: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                document.getElementById('fileInput').value = '';
+            }
+        }
+
+        async function askQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+
+            if (!question) {
+                showMessage('Please enter a question', 'error');
+                return;
+            }
+
+            if (isProcessing) return;
+
+            try {
+                isProcessing = true;
+                document.getElementById('askBtn').disabled = true;
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('results').style.display = 'none';
+
+                const response = await fetch('/api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question, topK: 3 })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayAnswer(result);
+                } else {
+                    showMessage(result.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error asking question: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                document.getElementById('askBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayAnswer(result) {
+            document.getElementById('results').style.display = 'block';
+
+            // Show answer - format it properly
+            document.getElementById('answerBox').style.display = 'block';
+            document.getElementById('answer').innerText = result.answer;
+
+            // Show context - format it properly  
+            if (result.context) {
+                document.getElementById('contextBox').style.display = 'block';
+                document.getElementById('context').innerText = result.context;
+            }
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('docCount').textContent = result.data.totalDocuments;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function clearSystem() {
+            if (!confirm('Are you sure you want to clear all documents?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/clear', {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('System cleared successfully', 'success');
+                    loadStats();
+                    document.getElementById('results').style.display = 'none';
+                    document.getElementById('questionInput').value = '';
+                } else {
+                    showMessage(result.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Error clearing system: ' + error.message, 'error');
+            }
+        }
+
+        function showMessage(text, type) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = text;
+
+            messagesDiv.appendChild(messageDiv);
+
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+
+</html>
